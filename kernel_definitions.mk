@@ -313,7 +313,15 @@ $(RTIC_DTB): $(INSTALLED_KERNEL_TARGET)
 	stat $(KERNEL_SYMLINK)/rtic_mp.dts 2>/dev/null >&2 && \
 	$(DTC) -O dtb -o $(RTIC_DTB) -b 1 $(DTC_FLAGS) $(KERNEL_SYMLINK)/rtic_mp.dts || \
 	touch $(RTIC_DTB)
+P_NAME="$(TARGET_BOARD_SUFFIX)"
+ifeq ($(P_NAME),"_gvmgh")
+# Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
+$(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
+	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@ \
+	$(shell device/qcom/msmnile_gvmgh/generate_linux_image.sh $(KERNEL_OUT)/arch/arm64/boot/Image) \
 
+else
 # Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
 $(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
 	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@
+endif
