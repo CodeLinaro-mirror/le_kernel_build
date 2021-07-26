@@ -72,6 +72,12 @@ ifeq ($(TARGET_PREBUILT_KERNEL),)
 
 KERNEL_GCC_NOANDROID_CHK := $(shell (echo "int main() {return 0;}" | $(KERNEL_CROSS_COMPILE)gcc -E -mno-android - > /dev/null 2>&1 ; echo $$?))
 
+ifeq ($(KERNEL_ARCH),arm64)
+CLANG_ARCH := aarch64-linux-gnu-
+else
+CLANG_ARCH := arm-linux-gnueabi
+endif
+
 real_cc :=
 ifeq ($(KERNEL_LLVM_SUPPORT),true)
   ifeq ($(KERNEL_SD_LLVM_SUPPORT), true)  #Using sd-llvm compiler
@@ -91,7 +97,7 @@ ifeq ($(KERNEL_LLVM_SUPPORT),true)
        KERNEL_AOSP_LLVM_BIN := $(shell pwd)/$(shell (dirname $(CLANG)))
        $(warning "Not using latest aosp-llvm" $(KERNEL_LLVM_BIN))
     endif
-  real_cc := REAL_CC=$(KERNEL_LLVM_BIN) CLANG_TRIPLE=aarch64-linux-gnu- AR=$(KERNEL_AOSP_LLVM_BIN)/llvm-ar LLVM_NM=$(KERNEL_AOSP_LLVM_BIN)/llvm-nm LD=$(KERNEL_AOSP_LLVM_BIN)/ld.lld NM=$(KERNEL_AOSP_LLVM_BIN)/llvm-nm
+  real_cc := REAL_CC=$(KERNEL_LLVM_BIN) CLANG_TRIPLE=$(CLANG_ARCH) AR=$(KERNEL_AOSP_LLVM_BIN)/llvm-ar LLVM_NM=$(KERNEL_AOSP_LLVM_BIN)/llvm-nm LD=$(KERNEL_AOSP_LLVM_BIN)/ld.lld NM=$(KERNEL_AOSP_LLVM_BIN)/llvm-nm
   endif
 else
 ifeq ($(strip $(KERNEL_GCC_NOANDROID_CHK)),0)
@@ -124,11 +130,12 @@ GKI_PLATFORM_NAME := $(shell echo $(KERNEL_DEFCONFIG) | sed -r "s/(-gki_defconfi
 GKI_PLATFORM_NAME := $(shell echo $(GKI_PLATFORM_NAME) | sed "s/vendor\///g")
 TARGET_USES_UNCOMPRESSED_KERNEL := $(shell grep "CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y" $(TARGET_KERNEL_SOURCE)/arch/arm64/configs/vendor/$(GKI_PLATFORM_NAME)_GKI.config)
 
+else
+TARGET_USES_UNCOMPRESSED_KERNEL := $(shell grep "CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y" $(TARGET_KERNEL_SOURCE)/arch/$(KERNEL_ARCH)/configs/$(KERNEL_DEFCONFIG))
+endif
+
 # Generate the defconfig file from the fragments
 _x := $(shell ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) KERN_OUT=$(KERNEL_OUT) $(TARGET_KERNEL_MAKE_ENV) MAKE_PATH=$(MAKE_PATH) TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT} $(TARGET_KERNEL_SOURCE)/scripts/gki/generate_defconfig.sh $(KERNEL_DEFCONFIG))
-else
-TARGET_USES_UNCOMPRESSED_KERNEL := $(shell grep "CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y" $(TARGET_KERNEL_SOURCE)/arch/arm64/configs/$(KERNEL_DEFCONFIG))
-endif
 
 ifeq ($(TARGET_USES_UNCOMPRESSED_KERNEL),)
 ifeq ($(KERNEL_ARCH),arm64)
@@ -195,14 +202,21 @@ BOARD_VENDOR_KERNEL_MODULES_$(GKI_TARGET_MODULES_DIR) = \
               $(foreach mod, $(BOARD_VENDOR_KERNEL_MODULES), \
                 $(subst $(KERNEL_MODULES_OUT), $(GKI_KERNEL_MODULES_OUT), $(mod)))
 
-$(warning VENDOR_RAMDISK_KERNEL_MODLUES = $(VENDOR_RAMDISK_KERNEL_MODLUES))
+$(warning VENDOR_RAMDISK_KERNEL_MODULES = $(VENDOR_RAMDISK_KERNEL_MODULES))
 
 ifneq ($(VENDOR_RAMDISK_KERNEL_MODULES),)
 VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE := vendor_ramdisk_modules.zip
 
+ifeq ($(TARGET_BOARD_AUTO),true)
+ifneq (, $(findstring -gki_defconfig, $(KERNEL_DEFCONFIG)))
+BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE := $(KERNEL_MODULES_OUT)/$(VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE)
+$(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE): $(TARGET_PREBUILT_KERNEL)
+endif
+else
 ifeq "$(KERNEL_DEFCONFIG)" "vendor/$(TARGET_BOARD_PLATFORM)-gki_defconfig"
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE := $(KERNEL_MODULES_OUT)/$(VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE)
 $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE): $(TARGET_PREBUILT_KERNEL)
+endif
 endif
 
 ifneq ($(GKI_INSTALLED_KERNEL_TARGET),)
@@ -299,7 +313,15 @@ $(RTIC_DTB): $(INSTALLED_KERNEL_TARGET)
 	stat $(KERNEL_SYMLINK)/rtic_mp.dts 2>/dev/null >&2 && \
 	$(DTC) -O dtb -o $(RTIC_DTB) -b 1 $(DTC_FLAGS) $(KERNEL_SYMLINK)/rtic_mp.dts || \
 	touch $(RTIC_DTB)
+P_NAME="$(TARGET_BOARD_SUFFIX)"
+ifeq ($(P_NAME),"_gvmgh")
+# Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
+$(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
+	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@ \
+	$(shell device/qcom/msmnile_gvmgh/generate_linux_image.sh $(KERNEL_OUT)/arch/arm64/boot/Image) \
 
+else
 # Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
 $(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
 	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@
+endif
