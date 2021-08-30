@@ -325,3 +325,7 @@ else
 $(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
 	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@
 endif
+
+ifeq ($(TARGET_DUMMY_VENDOR_BOOT), true)
+	$(shell dd if=/dev/zero of=$(PRODUCT_OUT)/vendor_boot.img bs=1M count=96)
+endif
