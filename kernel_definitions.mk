@@ -202,14 +202,21 @@ BOARD_VENDOR_KERNEL_MODULES_$(GKI_TARGET_MODULES_DIR) = \
               $(foreach mod, $(BOARD_VENDOR_KERNEL_MODULES), \
                 $(subst $(KERNEL_MODULES_OUT), $(GKI_KERNEL_MODULES_OUT), $(mod)))
 
-$(warning VENDOR_RAMDISK_KERNEL_MODLUES = $(VENDOR_RAMDISK_KERNEL_MODLUES))
+$(warning VENDOR_RAMDISK_KERNEL_MODULES = $(VENDOR_RAMDISK_KERNEL_MODULES))
 
 ifneq ($(VENDOR_RAMDISK_KERNEL_MODULES),)
 VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE := vendor_ramdisk_modules.zip
 
+ifeq ($(TARGET_BOARD_AUTO),true)
+ifneq (, $(findstring -gki_defconfig, $(KERNEL_DEFCONFIG)))
+BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE := $(KERNEL_MODULES_OUT)/$(VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE)
+$(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE): $(TARGET_PREBUILT_KERNEL)
+endif
+else
 ifeq "$(KERNEL_DEFCONFIG)" "vendor/$(TARGET_BOARD_PLATFORM)-gki_defconfig"
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE := $(KERNEL_MODULES_OUT)/$(VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE)
 $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_ARCHIVE): $(TARGET_PREBUILT_KERNEL)
+endif
 endif
 
 ifneq ($(GKI_INSTALLED_KERNEL_TARGET),)
@@ -306,7 +313,19 @@ $(RTIC_DTB): $(INSTALLED_KERNEL_TARGET)
 	stat $(KERNEL_SYMLINK)/rtic_mp.dts 2>/dev/null >&2 && \
 	$(DTC) -O dtb -o $(RTIC_DTB) -b 1 $(DTC_FLAGS) $(KERNEL_SYMLINK)/rtic_mp.dts || \
 	touch $(RTIC_DTB)
+P_NAME="$(TARGET_BOARD_SUFFIX)"
+ifeq ($(P_NAME),"_gvmgh")
+# Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
+$(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
+	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@ \
+	$(shell device/qcom/msmnile_gvmgh/generate_linux_image.sh $(KERNEL_OUT)/arch/arm64/boot/Image) \
 
+else
 # Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
 $(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
 	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@
+endif
+
+ifeq ($(TARGET_DUMMY_VENDOR_BOOT), true)
+	$(shell dd if=/dev/zero of=$(PRODUCT_OUT)/vendor_boot.img bs=1M count=96)
+endif
