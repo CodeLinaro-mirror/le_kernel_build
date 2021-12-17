@@ -23,6 +23,11 @@ TARGET_KERNEL_MAKE_ENV += CONFIG_BUILD_ARM64_DT_OVERLAY=y
 TARGET_KERNEL_MAKE_ENV += HOSTCC=$(SOURCE_ROOT)/$(SOONG_LLVM_PREBUILTS_PATH)/clang
 TARGET_KERNEL_MAKE_ENV += HOSTAR=$(SOURCE_ROOT)/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8/bin/x86_64-linux-ar
 TARGET_KERNEL_MAKE_ENV += HOSTLD=$(SOURCE_ROOT)/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8/bin/x86_64-linux-ld
+# Pass M4, LEX, and YACC via TARGET_KERNEL_MAKE_ENV to prevent build errors due
+# to android build system's restriction against using path tools.
+TARGET_KERNEL_MAKE_ENV += M4=$(SOURCE_ROOT)/prebuilts/build-tools/linux-x86/bin/m4
+TARGET_KERNEL_MAKE_ENV += LEX=$(SOURCE_ROOT)/prebuilts/build-tools/linux-x86/bin/flex
+TARGET_KERNEL_MAKE_ENV += YACC=$(SOURCE_ROOT)/prebuilts/build-tools/linux-x86/bin/bison
 TARGET_KERNEL_MAKE_CFLAGS = "-I$(SOURCE_ROOT)/$(TARGET_KERNEL_SOURCE)/include/uapi -I/usr/include -I/usr/include/x86_64-linux-gnu -I$(SOURCE_ROOT)/$(TARGET_KERNEL_SOURCE)/include -L/usr/lib -L/usr/lib/x86_64-linux-gnu -fuse-ld=lld"
 TARGET_KERNEL_MAKE_LDFLAGS = "-L/usr/lib -L/usr/lib/x86_64-linux-gnu -fuse-ld=lld"
 
@@ -120,6 +125,11 @@ KERNEL_USR := $(KERNEL_SYMLINK)/usr
 KERNEL_USR_TS := $(TARGET_OUT_INTERMEDIATES)/kernelusr.time
 
 KERNEL_CONFIG := $(KERNEL_OUT)/.config
+
+# Move MAKE_PATH here (cut from below), so that it's defined before first use.
+# Without this the build fails due to android build system path tool
+# restrictions.
+MAKE_PATH := $(SOURCE_ROOT)/prebuilts/build-tools/linux-x86/bin/
 
 ifeq ($(KERNEL_DEFCONFIG)$(wildcard $(KERNEL_CONFIG)),)
 $(error Kernel configuration not defined, cannot build kernel)
@@ -237,8 +247,6 @@ $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES): $(TARGET_PREBUILT_KERNEL)
 ifdef RTIC_MPGEN
 RTIC_DTB := $(KERNEL_SYMLINK)/rtic_mp.dtb
 endif
-
-MAKE_PATH := $(SOURCE_ROOT)/prebuilts/build-tools/linux-x86/bin/
 
 # Helper functions
 
