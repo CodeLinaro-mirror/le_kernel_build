@@ -110,11 +110,10 @@ KERNEL_CFLAGS := KCFLAGS=-mno-android
 endif
 endif
 
-GKI_KERNEL=0
 ifneq (,$(findstring gki,$(KERNEL_DEFCONFIG)))
 $(info ###### GKI based platform ######)
 ifneq "gki_defconfig" "$(KERNEL_DEFCONFIG)"
-GKI_KERNEL=1
+GKI_KERNEL ?= 1
 endif
 endif
 
@@ -141,7 +140,7 @@ GKI_PLATFORM_NAME := $(shell echo $(GKI_PLATFORM_NAME) | sed "s/vendor\///g")
 TARGET_USES_UNCOMPRESSED_KERNEL := $(shell grep "CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y" $(TARGET_KERNEL_SOURCE)/arch/arm64/configs/vendor/$(GKI_PLATFORM_NAME)_GKI.config)
 
 else
-TARGET_USES_UNCOMPRESSED_KERNEL := $(shell grep "CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y" $(TARGET_KERNEL_SOURCE)/arch/$(KERNEL_ARCH)/configs/$(KERNEL_DEFCONFIG))
+TARGET_USES_UNCOMPRESSED_KERNEL ?= $(shell grep "CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y" $(TARGET_KERNEL_SOURCE)/arch/$(KERNEL_ARCH)/configs/$(KERNEL_DEFCONFIG))
 endif
 
 # Generate the defconfig file from the fragments
