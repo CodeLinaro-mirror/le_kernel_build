@@ -55,7 +55,7 @@ debugfs_disable()
 		echo "combining fragments for user build"
 		(cd ${KERNEL_DIR} && \
 		ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} \
-		./scripts/kconfig/merge_config.sh ./arch/${ARCH}/configs/$DEFCONFIG ./arch/$ARCH/configs/vendor/debugfs.config
+		./scripts/kconfig/merge_config.sh -m ./arch/${ARCH}/configs/$DEFCONFIG ./arch/$ARCH/configs/vendor/debugfs.config
 		${MAKE_PATH}make ${MAKE_ARGS} HOSTCFLAGS="${TARGET_INCLUDES}" HOSTLDFLAGS="${TARGET_LINCLUDES}" ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} savedefconfig
 		mv defconfig ./arch/${ARCH}/configs/$DEFCONFIG
 		${MAKE_PATH}make mrproper)
