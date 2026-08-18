@@ -33,6 +33,7 @@ test_suite(
         "//build/kernel/kleaf/tests/kernel_config_test",
         "//build/kernel/kleaf/tests/kernel_images_test",
         "//build/kernel/kleaf/tests/kernel_module_group_test",
+        "//build/kernel/kleaf/tests/kernel_modules_install_test",
         "//build/kernel/kleaf/tests/libcap_test",
         "//build/kernel/kleaf/tests/merged_kernel_uapi_headers_test",
         "//build/kernel/kleaf/tests/native_binary_with_arg_test",

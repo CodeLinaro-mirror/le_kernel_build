@@ -20,6 +20,14 @@ load(":common_providers.bzl", "GcovInfo")
 
 visibility("//build/kernel/kleaf/...")
 
+def is_gcov_enabled(ctx):
+    """Returns True if GCOV is enabled globally in any mode.
+
+    Even if CONFIG_GCOV_PROFILE_ALL is not set, individual files or modules
+    (e.g. DDK modules with gcov="always") can still generate gcno files.
+    """
+    return ctx.attr._gcov[BuildSettingInfo].value or ctx.attr._gcov_mode[BuildSettingInfo].value != "default"
+
 def _gcno_common_impl(ctx, file_mappings_args, rsync_cmd, mappings_args, extra_inputs, gcno_dir):
     """Returns a step for handling `*.gcno`files and mappings.
 
@@ -40,7 +48,7 @@ def _gcno_common_impl(ctx, file_mappings_args, rsync_cmd, mappings_args, extra_i
     tools = []
     gcno_mapping = None
 
-    if ctx.attr._gcov[BuildSettingInfo].value:
+    if is_gcov_enabled(ctx):
         gcno_mapping = ctx.actions.declare_file("{name}/gcno_mapping.{name}.json".format(name = ctx.label.name))
         gcno_archive = ctx.actions.declare_file(
             "{name}/{name}.gcno.tar.gz".format(name = ctx.label.name),
@@ -86,7 +94,7 @@ def get_grab_gcno_step(ctx, src_dir, is_kernel_build):
       A struct with fields (inputs, tools, outputs, cmd, gcno_mapping, gcno_dir)
     """
 
-    if not ctx.attr._gcov[BuildSettingInfo].value:
+    if not is_gcov_enabled(ctx):
         return _gcno_common_impl(ctx, "", "", "", [], None)
 
     file_mappings_args = ""
@@ -135,7 +143,7 @@ def get_merge_gcno_step(ctx, targets):
       A struct with fields (inputs, tools, outputs, cmd, gcno_mapping, gcno_dir)
     """
 
-    if not ctx.attr._gcov[BuildSettingInfo].value:
+    if not is_gcov_enabled(ctx):
         return _gcno_common_impl(ctx, "", "", "", [], None)
 
     file_mappings_cmd = ""
@@ -171,4 +179,5 @@ def gcov_attrs():
             executable = True,
         ),
         "_gcov": attr.label(default = "//build/kernel/kleaf:gcov"),
+        "_gcov_mode": attr.label(default = "//build/kernel/kleaf:gcov_mode"),
     }

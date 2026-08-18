@@ -988,7 +988,7 @@ def _get_post_defconfig_fragments_inherited(
     additional_fragments = [
         Label("//build/kernel/kleaf:defconfig_fragment"),
         Label("//build/kernel/kleaf/impl/defconfig:debug"),
-        Label("//build/kernel/kleaf/impl/defconfig:gcov"),
+        Label("//build/kernel/kleaf/impl/defconfig:gcov_mode"),
         Label("//build/kernel/kleaf/impl/defconfig:lto"),
         Label("//build/kernel/kleaf/impl/defconfig:kcov"),
         Label("//build/kernel/kleaf/impl/defconfig:rust"),
@@ -1086,7 +1086,7 @@ def _get_trim_post_defconfig_fragment_target(
         first_selector = select({
             Label("//build/kernel/kleaf/impl:force_disable_trim_is_true"): False,
             Label("//build/kernel/kleaf:debug_is_true"): False,
-            Label("//build/kernel/kleaf:gcov_is_true"): False,
+            Label("//build/kernel/kleaf:gcov_mode_is_enabled"): False,
             Label("//build/kernel/kleaf:kcov_is_true"): False,
             Label("//build/kernel/kleaf:kasan_is_true"): False,
             Label("//build/kernel/kleaf:kcsan_is_true"): False,

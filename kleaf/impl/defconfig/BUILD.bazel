@@ -185,11 +185,27 @@ filegroup(
 )
 
 filegroup(
-    name = "gcov",
+    name = "gcov_mode_enabled",
     srcs = select({
-        "//build/kernel/kleaf:gcov_is_true": ["gcov_defconfig"],
+        "//build/kernel/kleaf:gcov_mode_is_enabled": ["gcov_enabled_defconfig"],
         "//conditions:default": [],
     }),
+)
+
+filegroup(
+    name = "gcov_mode_profile_all",
+    srcs = select({
+        "//build/kernel/kleaf:gcov_mode_is_profile_all": ["gcov_profile_all_defconfig"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "gcov_mode",
+    srcs = [
+        ":gcov_mode_enabled",
+        ":gcov_mode_profile_all",
+    ],
     visibility = ["//visibility:public"],
 )
 

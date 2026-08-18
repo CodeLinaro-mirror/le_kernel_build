@@ -32,6 +32,7 @@ _ARCHS = (
 
 _INTERESTING_FLAGS = (
     "//build/kernel/kleaf:gcov",
+    "//build/kernel/kleaf:gcov_mode",
     "//build/kernel/kleaf:btf_debug_info",
     "//build/kernel/kleaf:debug",
     "//build/kernel/kleaf:kasan",
@@ -232,12 +233,60 @@ def kernel_defconfig_fragments_test(name):
             expected = [
                 [
                     _FlagValuesConfigs(
-                        flag_values = [_FlagValue(flag = "//build/kernel/kleaf:gcov", value = "True")],
-                        configs = ["CONFIG_GCOV_KERNEL=y"],
+                        flag_values = [
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov", value = "False"),
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov_mode", value = "default"),
+                        ],
+                        configs = ["# CONFIG_GCOV_KERNEL is not set"],
                     ),
                     _FlagValuesConfigs(
-                        flag_values = [_FlagValue(flag = "//build/kernel/kleaf:gcov", value = "False")],
-                        configs = ["# CONFIG_GCOV_KERNEL is not set"],
+                        flag_values = [
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov", value = "False"),
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov_mode", value = "enabled"),
+                        ],
+                        configs = [
+                            "CONFIG_GCOV_KERNEL=y",
+                        ],
+                    ),
+                    _FlagValuesConfigs(
+                        flag_values = [
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov", value = "False"),
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov_mode", value = "profile_all"),
+                        ],
+                        configs = [
+                            "CONFIG_GCOV_KERNEL=y",
+                            "CONFIG_GCOV_PROFILE_ALL=y",
+                        ],
+                    ),
+                    _FlagValuesConfigs(
+                        flag_values = [
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov", value = "True"),
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov_mode", value = "default"),
+                        ],
+                        configs = [
+                            "CONFIG_GCOV_KERNEL=y",
+                            "CONFIG_GCOV_PROFILE_ALL=y",
+                        ],
+                    ),
+                    _FlagValuesConfigs(
+                        flag_values = [
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov", value = "True"),
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov_mode", value = "enabled"),
+                        ],
+                        configs = [
+                            "CONFIG_GCOV_KERNEL=y",
+                            "CONFIG_GCOV_PROFILE_ALL=y",
+                        ],
+                    ),
+                    _FlagValuesConfigs(
+                        flag_values = [
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov", value = "True"),
+                            _FlagValue(flag = "//build/kernel/kleaf:gcov_mode", value = "profile_all"),
+                        ],
+                        configs = [
+                            "CONFIG_GCOV_KERNEL=y",
+                            "CONFIG_GCOV_PROFILE_ALL=y",
+                        ],
                     ),
                 ],
                 [

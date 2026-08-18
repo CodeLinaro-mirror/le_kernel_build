@@ -59,7 +59,10 @@ from absl.testing import absltest
 def load_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--actual", nargs="+", type=pathlib.Path, help="actual files")
-    parser.add_argument("--expected", nargs="+", type=pathlib.Path, help="expected files")
+    parser.add_argument("--expected", nargs="+", type=pathlib.Path,
+                        help="files containing expected lines")
+    parser.add_argument("--disallowed", nargs="*", type=pathlib.Path, default=[],
+                        help="files containing disallowed lines")
     parser.add_argument("--order", action="store_true")
     return parser.parse_known_args()
 
@@ -83,11 +86,16 @@ class CompareTest(unittest.TestCase):
         for path in arguments.expected:
             expected[path.name].append(path)
 
+        disallowed = collections.defaultdict(list)
+        for path in arguments.disallowed:
+            disallowed[path.name].append(path)
+
         basenames = set() | actual.keys() | expected.keys()
 
         for basename in basenames:
             actual_with_basename = actual[basename]
             expected_with_basename = expected[basename]
+            disallowed_with_basename = disallowed[basename]
 
             self.assertTrue(actual_with_basename, f"missing actual file for {basename}")
             self.assertTrue(expected_with_basename, f"missing expected file for {basename}")
@@ -96,6 +104,9 @@ class CompareTest(unittest.TestCase):
                 for expected_file in expected_with_basename:
                     with self.subTest(actual=actual_file, expected=expected_file):
                         self._assert_contain_lines(actual=actual_file, expected=expected_file)
+                for disallowed_file in disallowed_with_basename:
+                    with self.subTest(actual=actual_file, disallowed=disallowed_file):
+                        self._assert_not_contain_lines(actual=actual_file, disallowed=disallowed_file)
 
     def _assert_contain_lines(self, actual: pathlib.Path, expected: pathlib.Path):
         actual_lines = _read_non_empty_lines(actual)
@@ -112,6 +123,20 @@ class CompareTest(unittest.TestCase):
                                     f"{actual} does not contain all lines from {expected} in " +
                                     f"the given order. Mismatch starting at line " +
                                     f"{expected_index} of {expected}.")
+
+    def _assert_not_contain_lines(self, actual: pathlib.Path, disallowed: pathlib.Path):
+        actual_lines = _read_non_empty_lines(actual)
+        disallowed_lines = _read_non_empty_lines(disallowed)
+
+        actual_counts = collections.Counter(actual_lines)
+        disallowed_counts = collections.Counter(disallowed_lines)
+
+        diff = actual_counts - disallowed_counts
+        diff_non_negative = collections.Counter(diff.elements())
+        self.assertEqual(diff_non_negative, actual_counts,
+                         f"{actual} contains lines from {disallowed}, disallowed lines: \n" +
+                         ("\n".join((disallowed_counts - actual_counts).elements())))
+
 
     def _check_sublist_with_order(self, actual_lines: list[str], expected_lines: list[str]) -> int:
         expected_index = 0

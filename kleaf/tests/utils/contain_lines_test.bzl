@@ -16,13 +16,20 @@
 
 load("@rules_python//python:defs.bzl", "py_test")
 
-def contain_lines_test(name, expected, actual, order = None, **kwargs):
+def contain_lines_test(
+        name,
+        expected,
+        actual,
+        disallowed = None,
+        order = None,
+        **kwargs):
     """See `contain_lines_test.py` for explanation.
 
     Args:
         name: name of test
         expected: A label expanding into the expected files.
         actual: A label expanding into the actual files.
+        disallowed: A label expanding into the disallowed files.
         order: If True, also assert ordering.
         **kwargs: kwargs to internal rule
     """
@@ -33,6 +40,12 @@ def contain_lines_test(name, expected, actual, order = None, **kwargs):
         "--expected",
         "$(locations {})".format(expected),
     ]
+    data = [expected, actual]
+    if disallowed:
+        args.append("--disallowed")
+        args.append("$(locations {})".format(disallowed))
+        data.append(disallowed)
+
     if order:
         args.append("--order")
 
@@ -41,7 +54,7 @@ def contain_lines_test(name, expected, actual, order = None, **kwargs):
         python_version = "PY3",
         main = "contain_lines_test.py",
         srcs = ["//build/kernel/kleaf/tests/utils:contain_lines_test.py"],
-        data = [expected, actual],
+        data = data,
         args = args,
         timeout = "short",
         deps = [

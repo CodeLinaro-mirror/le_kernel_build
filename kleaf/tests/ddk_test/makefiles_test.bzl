@@ -197,8 +197,10 @@ def _create_makefiles_artifact_test(
         top_level_makefile = None,
         kernel_build = None,
         support_ftrace = None,
+        gcov = None,
         target_type = None,
         expected_lines = None,
+        disallowed_kbuild_lines = None,
         expected_makefile_lines = None,
         expected_cflags_lines = None,
         expected_asflags_lines = None,
@@ -209,6 +211,7 @@ def _create_makefiles_artifact_test(
         name = name + "_module_makefiles",
         kernel_build = kernel_build,
         module_support_ftrace = support_ftrace,
+        module_gcov = gcov,
         module_out = out,
         module_srcs = srcs,
         module_local_defines = local_defines,
@@ -233,6 +236,12 @@ def _create_makefiles_artifact_test(
         content = expected_lines,
     )
 
+    write_file(
+        name = name + "_disallowed_kbuild",
+        out = name + "_disallowed_kbuild/Kbuild",
+        content = disallowed_kbuild_lines,
+    )
+
     get_top_level_file(
         name = name + "_kbuild",
         filename = "Kbuild",
@@ -243,6 +252,7 @@ def _create_makefiles_artifact_test(
     contain_lines_test(
         name = name + "_kbuild_test",
         expected = name + "_expected",
+        disallowed = name + "_disallowed_kbuild",
         actual = name + "_kbuild",
         order = True,
     )
@@ -788,6 +798,123 @@ def _makefiles_support_ftrace_tests(name):
         tests = tests,
     )
 
+def _makefiles_gcov_tests(name):
+    """Tests for gcov attribute."""
+    tests = []
+
+    _create_makefiles_artifact_test(
+        name = name + "_y_module",
+        out = "module.ko",
+        srcs = ["dep.c"],
+        gcov = "always",
+        expected_lines = [
+            "GCOV_PROFILE_dep.o := y",
+        ],
+    )
+    tests.append(name + "_y_module")
+
+    _create_makefiles_artifact_test(
+        name = name + "_y_library",
+        out = "fake.ko",
+        srcs = ["dep.c"],
+        gcov = "always",
+        target_type = "library",
+        expected_lines = [
+            "GCOV_PROFILE_dep.o := y",
+        ],
+    )
+    tests.append(name + "_y_library")
+
+    _create_makefiles_artifact_test(
+        name = name + "_n_module",
+        out = "module.ko",
+        srcs = ["dep.c"],
+        gcov = "never",
+        expected_lines = [
+            "GCOV_PROFILE_dep.o := n",
+        ],
+    )
+    tests.append(name + "_n_module")
+
+    _create_makefiles_artifact_test(
+        name = name + "_n_library",
+        out = "fake.ko",
+        srcs = ["dep.c"],
+        gcov = "never",
+        target_type = "library",
+        expected_lines = [
+            "GCOV_PROFILE_dep.o := n",
+        ],
+    )
+    tests.append(name + "_n_library")
+
+    _create_makefiles_artifact_test(
+        name = name + "_unspecified_module",
+        out = "module.ko",
+        srcs = ["dep.c"],
+        gcov = None,
+        disallowed_kbuild_lines = [
+            "GCOV_PROFILE_dep.o := y",
+            "GCOV_PROFILE_dep.o := n",
+        ],
+    )
+    tests.append(name + "_unspecified_module")
+
+    _create_makefiles_artifact_test(
+        name = name + "_unspecified_library",
+        out = "fake.ko",
+        srcs = ["dep.c"],
+        gcov = None,
+        target_type = "library",
+        disallowed_kbuild_lines = [
+            "GCOV_PROFILE_dep.o := y",
+            "GCOV_PROFILE_dep.o := n",
+        ],
+    )
+    tests.append(name + "_unspecified_library")
+
+    _create_makefiles_artifact_test(
+        name = name + "_y_submodule",
+        out = "module.ko",
+        srcs = ["dep.c"],
+        gcov = "always",
+        target_type = "submodule",
+        expected_lines = [
+            "GCOV_PROFILE_dep.o := y",
+        ],
+    )
+    tests.append(name + "_y_submodule")
+
+    _create_makefiles_artifact_test(
+        name = name + "_n_submodule",
+        out = "module.ko",
+        srcs = ["dep.c"],
+        gcov = "never",
+        target_type = "submodule",
+        expected_lines = [
+            "GCOV_PROFILE_dep.o := n",
+        ],
+    )
+    tests.append(name + "_n_submodule")
+
+    _create_makefiles_artifact_test(
+        name = name + "_unspecified_submodule",
+        out = "module.ko",
+        srcs = ["dep.c"],
+        gcov = None,
+        target_type = "submodule",
+        disallowed_kbuild_lines = [
+            "GCOV_PROFILE_dep.o := y",
+            "GCOV_PROFILE_dep.o := n",
+        ],
+    )
+    tests.append(name + "_unspecified_submodule")
+
+    native.test_suite(
+        name = name,
+        tests = tests,
+    )
+
 def makefiles_test_suite(name):
     """Defines tests for `makefiles`.
 
@@ -1086,6 +1213,11 @@ def makefiles_test_suite(name):
         name = name + "_support_ftrace",
     )
     tests.append(name + "_support_ftrace")
+
+    _makefiles_gcov_tests(
+        name = name + "_gcov",
+    )
+    tests.append(name + "_gcov")
 
     native.test_suite(
         name = name,

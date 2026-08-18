@@ -35,6 +35,7 @@ def ddk_submodule(
         crate_root = None,
         autofdo_profile = None,
         debug_info_for_profiling = None,
+        gcov = None,
         **kwargs):
     """Declares a DDK (Driver Development Kit) submodule.
 
@@ -191,6 +192,10 @@ def ddk_submodule(
 
             These are only effective in the current submodule, not other submodules declared in the
             same [`ddk_module.deps`](#ddk_module-deps).
+        gcov: See [`ddk_module.gcov`](#ddk_module-gcov).
+
+            These are only effective in the current submodule, not other submodules declared in the
+            same [`ddk_module.deps`](#ddk_module-deps).
         **kwargs: Additional attributes to the internal rule, e.g.
           [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
           See complete list
@@ -221,6 +226,7 @@ def ddk_submodule(
         module_linkopts = linkopts,
         module_autofdo_profile = autofdo_profile,
         module_debug_info_for_profiling = debug_info_for_profiling,
+        module_gcov = gcov,
         target_type = "submodule",
         top_level_makefile = False,
         kbuild_has_linux_include = False,

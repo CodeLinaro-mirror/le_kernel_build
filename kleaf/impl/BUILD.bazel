@@ -336,6 +336,36 @@ bool_setting(
     visibility = ["//build/kernel/kleaf:__pkg__"],
 )
 
+config_setting(
+    name = "gcov_flag_is_true",
+    flag_values = {"//build/kernel/kleaf:gcov": "1"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "gcov_flag_is_false",
+    flag_values = {"//build/kernel/kleaf:gcov": "0"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "gcov_mode_flag_is_default",
+    flag_values = {"//build/kernel/kleaf:gcov_mode": "default"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "gcov_mode_flag_is_enabled",
+    flag_values = {"//build/kernel/kleaf:gcov_mode": "enabled"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "gcov_mode_flag_is_profile_all",
+    flag_values = {"//build/kernel/kleaf:gcov_mode": "profile_all"},
+    visibility = ["//visibility:public"],
+)
+
 py_binary(
     name = "ddk/gen_makefiles",
     srcs = ["ddk/gen_makefiles.py"],
