@@ -15,6 +15,7 @@
 A rule that runs depmod in the module installation directory.
 """
 
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//build/kernel/kleaf:directory_with_structure.bzl", dws = "directory_with_structure")
 load(
@@ -90,6 +91,29 @@ def _kernel_modules_install_impl(ctx):
     for module_file in module_files:
         declared_file = ctx.actions.declare_file("{}/{}".format(ctx.label.name, module_file.basename))
         external_modules.append(declared_file)
+
+    if ctx.attr.check_dependencies:
+        # In a regular kernel build for a single device, this is usually expanded ONCE in the
+        # analysis phase with some hundreds of elements, because there are usually one
+        # kernel_modules_install per device. Hence, a depset expansion is acceptable.
+        # Hypothetically, it wouldn't scale if we are building hundreds of devices at once, but we
+        # aren't doing that.
+        transitive_module_files = depset(transitive = [
+            kernel_module[KernelModuleInfo].transitive_files
+            for kernel_module in ctx.attr.kernel_modules
+        ]).to_list()
+
+        # Check that all expected .ko files are installed
+        missing_files = sets.to_list(sets.difference(
+            sets.make([f for f in transitive_module_files if f.extension == "ko"]),
+            sets.make([f for f in module_files if f.extension == "ko"]),
+        ))
+
+        if missing_files:
+            msg = "\nERROR: The following modules are dependencies but are not installed:\n"
+            for f in missing_files:
+                msg += "  {}\n".format(f.path)
+            fail(msg)
 
     for out in ctx.attr.outs:
         if out not in _OUT_ALLOWLIST:
@@ -336,6 +360,18 @@ kernel_modules_install(
 )
 ```
 """.format(repr(_OUT_ALLOWLIST)),
+        ),
+        "check_dependencies": attr.bool(
+            # TODO: b/516649189 - Turn this to True by default.
+            default = False,
+            doc = """If True, check that all transitive dependencies of kernel_modules are installed.
+
+            This turns on a check during the analysis phase to ensure all the modules and
+            their dependencies are explicitly listed, which could avoid missing dependencies
+            at run time. It only does the check instead of adding the transitive modules
+            silently to ensure that all modules are noticed, as a module dependency could be
+            introduced by accident.
+            """,
         ),
     } | gcov_attrs(),
 )

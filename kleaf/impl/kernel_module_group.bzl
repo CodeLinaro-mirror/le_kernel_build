@@ -92,6 +92,10 @@ def _kernel_module_group_impl(ctx):
             transitive = [target[KernelModuleInfo].modules_order for target in targets],
             order = "postorder",
         ),
+        transitive_files = depset(transitive = [
+            target[KernelModuleInfo].transitive_files
+            for target in targets
+        ]),
     )
 
     unstripped_modules_info = KernelUnstrippedModulesInfo(

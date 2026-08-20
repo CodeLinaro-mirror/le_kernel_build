@@ -341,6 +341,8 @@ for EXT_MOD in ${EXT_MODULES}; do
      btgt="hamoa_la"
   elif [ "$TARGET_BOARD_PLATFORM" = "mahua" ]; then
      btgt="glymur"
+  elif [ "$TARGET_BOARD_PLATFORM" = "taro" ]; then
+     btgt="waipio"
   else
      btgt="$TARGET_BOARD_PLATFORM"
   fi

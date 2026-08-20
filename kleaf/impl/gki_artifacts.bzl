@@ -19,6 +19,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(":common_providers.bzl", "KernelBuildUnameInfo")
 load(":constants.bzl", "GKI_ARTIFACTS_AARCH64_OUTS")
+load(":gcov_utils.bzl", "gcov_attrs", "is_gcov_enabled")
 load(":hermetic_toolchain.bzl", "hermetic_toolchain")
 load(":utils.bzl", "utils")
 
@@ -79,7 +80,7 @@ def _gki_artifacts_impl(ctx):
     # b/283225390: boot images with --gcov and --kasan_generic may overflow the boot image size
     #   check when adding AVB hash footer.
     skip_avb_cmd = ""
-    if ctx.attr._gcov[BuildSettingInfo].value or ctx.attr._kasan_generic[BuildSettingInfo].value:
+    if is_gcov_enabled(ctx) or ctx.attr._kasan_generic[BuildSettingInfo].value:
         skip_avb_cmd = """
             export BUILD_GKI_BOOT_SKIP_AVB=1
         """
@@ -185,10 +186,9 @@ For example:
             default = Label("//build/kernel:build_utils"),
             cfg = "exec",
         ),
-        "_gcov": attr.label(default = "//build/kernel/kleaf:gcov"),
         "_kasan_generic": attr.label(default = "//build/kernel/kleaf:kasan_generic"),
         "_testkey": attr.label(default = "//tools/mkbootimg:gki/testdata/testkey_rsa4096.pem", allow_single_file = True),
-    },
+    } | gcov_attrs(),
     toolchains = [hermetic_toolchain.type],
 )
 

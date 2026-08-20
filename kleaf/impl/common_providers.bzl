@@ -418,6 +418,7 @@ KernelModuleInfo = provider(
             files from ddk_module's, kernel_module, etc.
             It uses [`postorder`](https://bazel.build/rules/lib/builtins/depset) ordering (dependencies
             first).""",
+        "transitive_files": "depset of Files of all transitive kernel_modules",
     },
 )
 

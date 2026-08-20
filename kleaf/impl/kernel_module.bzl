@@ -775,6 +775,11 @@ def _kernel_module_impl(ctx):
     if modules_order:
         output_group_args["modules.order"] = depset([modules_order])
 
+    transitive_files = depset(
+        output_files,
+        transitive = [dep.kernel_module_info.transitive_files for dep in kernel_module_deps],
+    )
+
     return [
         # Sync list of infos with kernel_module_group.
         DefaultInfo(
@@ -795,6 +800,7 @@ def _kernel_module_impl(ctx):
             packages = depset([ext_mod]),
             label = ctx.label,
             modules_order = depset([modules_order]) if modules_order else depset(),
+            transitive_files = transitive_files,
         ),
         KernelUnstrippedModulesInfo(
             directories = depset([unstripped_dir], order = "postorder"),

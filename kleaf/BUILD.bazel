@@ -254,16 +254,53 @@ bool_flag(
     visibility = ["//visibility:public"],
 )
 
-# If true, *.gcno files are collected.
+# Deprecated. If true, same as --gcov_mode=profile_all.
 bool_flag(
     name = "gcov",
     build_setting_default = False,
     visibility = ["//visibility:public"],
 )
 
-config_setting(
+# Flag to control gcov and whether *.gcno files are collected.
+#
+# * default: Do nothing
+# * enabled: Enables gcov (CONFIG_GCOV_KERNEL=y)
+# * profile_all: Profiles kernel + modules (CONFIG_GCOV_PROFILE_ALL=y)
+string_flag(
+    name = "gcov_mode",
+    build_setting_default = "default",
+    values = [
+        "default",
+        "enabled",
+        "profile_all",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# gcov_mode_is_enabled matches if GCOV_KERNEL should be y
+selects.config_setting_group(
+    name = "gcov_mode_is_enabled",
+    match_any = [
+        "//build/kernel/kleaf/impl:gcov_flag_is_true",
+        "//build/kernel/kleaf/impl:gcov_mode_flag_is_enabled",
+        "//build/kernel/kleaf/impl:gcov_mode_flag_is_profile_all",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# gcov_mode_is_profile_all matches if GCOV_PROFILE_ALL should be y
+selects.config_setting_group(
+    name = "gcov_mode_is_profile_all",
+    match_any = [
+        "//build/kernel/kleaf/impl:gcov_flag_is_true",
+        "//build/kernel/kleaf/impl:gcov_mode_flag_is_profile_all",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
     name = "gcov_is_true",
-    flag_values = {":gcov": "1"},
+    actual = ":gcov_mode_is_profile_all",
     visibility = ["//visibility:public"],
 )
 

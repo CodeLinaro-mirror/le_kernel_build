@@ -140,6 +140,7 @@ def _ddk_prebuilt_module_impl(ctx):
         packages = depset([ext_mod]),
         label = ctx.label,
         modules_order = depset([modules_order]),
+        transitive_files = depset([module_ko]),
     )
 
     infos.append(DefaultInfo(files = depset(all_files)))

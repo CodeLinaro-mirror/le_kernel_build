@@ -78,6 +78,10 @@ file, via the `kconfig` or `defconfig` attribute, respectively.
 
 See [configuring DDK module](config.md) for details.
 
+### GCOV profiling
+
+To configure GCOV profiling for a `ddk_module` target, see the `gcov` attribute in the [GCOV documentation](../gcov.md#ddk_module).
+
 ## ddk\_submodule
 
 **NOTE**: Using `ddk_submodule` is discouraged because of the unclear module

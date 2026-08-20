@@ -1,4 +1,3 @@
-CONFIG_GCOV_KERNEL=y
 CONFIG_GCOV_PROFILE_ALL=y
 
 # TODO(b/291710318) Allow section mismatch when using GCOV_PROFILE_ALL
