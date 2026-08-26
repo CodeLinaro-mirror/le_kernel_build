@@ -521,19 +521,21 @@ if [ "${COPY_NEEDED}" == "1" ]; then
   if [ "${ENABLE_VENDOR_CUTTLEFISH}" == "true" ] ; then
     # Copy only Prime DTBs and correct their "qcom,board-id".
     # The correct value is taken from the original DTB, without the "prime" prefix.
-    # The original DTB always MUST exist, this is not optional.
     readarray -t PDTBS < <(cd "${ANDROID_KP_OUT_DIR}/dist" && find . -name "prime-*.dtb*")
     for PDTB in "${PDTBS[@]}" ; do
       # Original DTB file path, erase the "prime-" from the Prime DTB path.
       ODTB="${PDTB/"prime-"/}"
-      # Retrieve the original "qcom,board-id" value, it is an array of signed integers.
-      readarray -t -d ' ' BOARDID < <("${ANDROID_KP_OUT_DIR}/host/bin/fdtget" \
-        "${ANDROID_KP_OUT_DIR}/dist/${ODTB}" "/" "qcom,board-id")
       # Copy the Prime DTB first - only this copy will be corrected.
       cp "${ANDROID_KP_OUT_DIR}/dist/${PDTB}" "${ANDROID_KERNEL_OUT}/kp-dtbs/"
-      # Put the "qcom,board-id" property from the original DTB into the Prime DTB.
-      "${ANDROID_KP_OUT_DIR}/host/bin/fdtput" \
-        "${ANDROID_KERNEL_OUT}/kp-dtbs/${PDTB}" "/" "qcom,board-id" "${BOARDID[@]}"
+      # Correct the board-id only if the original DTB exists.
+      if [ -f "${ANDROID_KP_OUT_DIR}/dist/${ODTB}" ] ; then
+        # Retrieve the original "qcom,board-id" value, it is an array of signed integers.
+        readarray -t -d ' ' BOARDID < <("${ANDROID_KP_OUT_DIR}/host/bin/fdtget" \
+          "${ANDROID_KP_OUT_DIR}/dist/${ODTB}" "/" "qcom,board-id")
+        # Put the "qcom,board-id" property from the original DTB into the Prime DTB.
+        "${ANDROID_KP_OUT_DIR}/host/bin/fdtput" \
+          "${ANDROID_KERNEL_OUT}/kp-dtbs/${PDTB}" "/" "qcom,board-id" "${BOARDID[@]}"
+      fi
     done
   else
     # For all other builds, copy all DTBs - no extra steps needed.
