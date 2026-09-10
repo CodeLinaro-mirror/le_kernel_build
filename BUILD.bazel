@@ -27,6 +27,8 @@ load(
     "transitioned_tool_from_sources",
 )
 
+exports_files(["android/generate_android_desktop_bin_noavb.sh"])
+
 filegroup(
     name = "sysroot",
     srcs = glob(

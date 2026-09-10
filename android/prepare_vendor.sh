@@ -511,17 +511,35 @@ if [ "${COPY_NEEDED}" == "1" ]; then
 
   cp "${files[@]/#/${ANDROID_KP_OUT_DIR}/dist/}" ${ANDROID_KERNEL_OUT}/
 
-  # LA Prime has its own set of dtb files, prefixed with "prime".
-  # However, board-id, msm-id and vmid in these dtbs would collide with the ones
-  # already built for autogvm. For this reason, LA Prime copies only its dtbs,
-  # and all other lunch targets copy everything except LA Prime dtbs.
-  rm -rf "${ANDROID_KERNEL_OUT}"/kp-dtbs
-  mkdir "${ANDROID_KERNEL_OUT}"/kp-dtbs
+  # LA Prime has its own set of DTB files, prefixed with "prime".
+  # However, board-id, msm-id and vmid in these DTBs collide with the ones that
+  # already used by autogvm. To avoid the collision, Prime DTBs use an unsupported
+  # "qcom,board-id" value. The value is corrected only for builds that need it:
+  # VENDOR SI targets with ENABLE_VENDOR_CUTTLEFISH set to "true".
+  rm -rf "${ANDROID_KERNEL_OUT}/kp-dtbs"
+  mkdir "${ANDROID_KERNEL_OUT}/kp-dtbs"
   if [ "${ENABLE_VENDOR_CUTTLEFISH}" == "true" ] ; then
-    cp "${ANDROID_KP_OUT_DIR}"/dist/prime-*.dtb* "${ANDROID_KERNEL_OUT}"/kp-dtbs/
+    # Copy only Prime DTBs and correct their "qcom,board-id".
+    # The correct value is taken from the original DTB, without the "prime" prefix.
+    readarray -t PDTBS < <(cd "${ANDROID_KP_OUT_DIR}/dist" && find . -name "prime-*.dtb*")
+    for PDTB in "${PDTBS[@]}" ; do
+      # Original DTB file path, erase the "prime-" from the Prime DTB path.
+      ODTB="${PDTB/"prime-"/}"
+      # Copy the Prime DTB first - only this copy will be corrected.
+      cp "${ANDROID_KP_OUT_DIR}/dist/${PDTB}" "${ANDROID_KERNEL_OUT}/kp-dtbs/"
+      # Correct the board-id only if the original DTB exists.
+      if [ -f "${ANDROID_KP_OUT_DIR}/dist/${ODTB}" ] ; then
+        # Retrieve the original "qcom,board-id" value, it is an array of signed integers.
+        readarray -t -d ' ' BOARDID < <("${ANDROID_KP_OUT_DIR}/host/bin/fdtget" \
+          "${ANDROID_KP_OUT_DIR}/dist/${ODTB}" "/" "qcom,board-id")
+        # Put the "qcom,board-id" property from the original DTB into the Prime DTB.
+        "${ANDROID_KP_OUT_DIR}/host/bin/fdtput" \
+          "${ANDROID_KERNEL_OUT}/kp-dtbs/${PDTB}" "/" "qcom,board-id" "${BOARDID[@]}"
+      fi
+    done
   else
-    cp "${ANDROID_KP_OUT_DIR}"/dist/*.dtb* "${ANDROID_KERNEL_OUT}"/kp-dtbs/
-    rm -f "${ANDROID_KERNEL_OUT}"/kp-dtbs/prime-*.dtb*
+    # For all other builds, copy all DTBs - no extra steps needed.
+    cp "${ANDROID_KP_OUT_DIR}/dist/"*.dtb* "${ANDROID_KERNEL_OUT}/kp-dtbs/"
   fi
 
   rm -rf ${ANDROID_KERNEL_OUT}/host
